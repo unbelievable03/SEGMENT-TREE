@@ -1,0 +1,86 @@
+const int N=2e5+5;
+
+int t[4*N]; // base array & this stores the sum
+
+bool lazy[4*N];  // tells if certain node is storing any unpropogated update or not
+
+int upd[4*N]; // the value of unpropogated updates
+// memory of the man
+
+// This is the process to telling the man to remember "val"
+void apply(int v, int tl , int tr , int val){
+	// tl,tr -> node range , v-> node id
+	t[v]+= val*(tr-tl+1); // set the correct information at the node
+	
+	if(tl!=tr){  // if it is not leaf, mark it lazy
+		lazy[v]=1;
+		upd[v]+=val;
+	}
+}
+
+void pushdown(int v, int tl , int tr){
+	if(lazy[v]){ // if it is lazy propogate it
+		lazy[v]=0; // not lazy anymore
+		
+		// he was remembering upd[v]
+		
+		int tm= (tl+tr)/2;
+		
+		apply(2*v,tl,tm,upd[v]); // propogate on left child
+		apply(2*v+1,tm+1,tr,upd[v]); // propogate on the right child
+		
+		upd[v]=0;// update done
+		// man doesnt remember anything anymore
+	}
+}
+
+// l,r-> update range
+// val-> update value, add this to all leaves in range [l,r]
+void update ( int v , int tl , int tr , int l, int r, int val){
+	// no overlap
+	if(tl>r || tr<l){
+		//ignore
+		return ;
+	}
+	// fully within condition
+	if(l<=tl && tr<=r){  // l....tl......tr....r
+		// ask the man to remember it
+		apply(v,tl,tr,val);
+		return;
+	}
+	
+	// partial overlap
+	
+	pushdown(v,tl,tr); // we remove the lazy tag before going down
+	// WHY?  so that the children have correct information
+	
+	int tm= (tl+tr)/2; // [tl,tm] and [tm+1,tr]
+	
+	update(2*v, tl, tm, l,r , val);
+	update(2*v+1,tm+1,tr,l,r,val);
+	
+	t[v]=t[2*v]+ t[2*v+1];  // store correct value at this node
+}
+
+// pretty much unchanged except for the pushdown
+int query(int v, int tl , int tr, int l , int r){
+	// no overlap
+	if(tl>r || tr<l){
+		return 0;
+	}
+	// fully within condition
+	if(l<=tl && tr<=r){  // l....tl......tr....r
+		return t[v]; // picking it fully
+	}
+	
+	pushdown(v,tl,tr); // we remove the lazy tag before going down
+	// WHY?  so that the children have correct information
+		
+	int tm= (tl+tr)/2; // [tl,tm] and [tm+1,tr]
+	int ans=0;
+	ans+= query(2*v,tl,tm,l,r);
+	ans+= query(2*v+1,tm+1,tr,l,r);
+	return ans;
+}
+
+// v,tl,tr -> 1,0,length-1
